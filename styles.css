@@ -494,4 +494,5 @@ h3 { font-size: 1.06rem; }
   .header-wrap { gap: 0.5rem; min-height: 60px; padding: 0 0.55rem; }
   .site-logo { height: 28px; max-width: 46vw; }
   .topbar nav a:not(.cart-link) { display: none; }
+  .hero-visual { display: none; }
 }
