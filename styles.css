@@ -1349,8 +1349,8 @@ body[data-page="home"] .recommended .page-head {
   .hero-visual .hero-product {
     position: absolute;
     left: auto;
-    right: -20%;
-    top: 46%;
+    right: -8%;
+    top: 60%;
     transform: translateY(-50%);
     width: 132%;
     max-width: 132%;
@@ -1364,6 +1364,7 @@ body[data-page="home"] .recommended .page-head {
     height: 100%;
     opacity: 0.96;
     transform: none;
+    filter: drop-shadow(0 10px 12px rgba(15, 25, 40, 0.12));
   }
   .hero {
     position: relative;
