@@ -711,7 +711,7 @@
     `;
   }
 
-  function showEnquirySuccessOverlay(name = "") {
+  function showEnquirySuccessOverlay() {
     const old = document.querySelector(".enquiry-success-overlay");
     if (old) old.remove();
 
@@ -719,20 +719,25 @@
     overlay.className = "enquiry-success-overlay";
     overlay.innerHTML = `
       <div class="enquiry-success-card" role="status" aria-live="polite">
+        <button class="enquiry-success-close" type="button" aria-label="Close">Close</button>
         <div class="enquiry-success-check" aria-hidden="true">
           <svg viewBox="0 0 64 64"><path d="M16 34l11 11 21-24"/></svg>
         </div>
         <h3>Enquiry Submitted</h3>
-        <p>${name ? `Thank you, ${esc(name)}.` : "Thank you."} Our sales representative will contact you soon.</p>
+        <p>Thank you. Our sales representative will contact you soon.</p>
       </div>
     `;
-    document.body.appendChild(overlay);
-
-    requestAnimationFrame(() => overlay.classList.add("is-visible"));
-    window.setTimeout(() => {
+    const close = () => {
       overlay.classList.remove("is-visible");
-      window.setTimeout(() => overlay.remove(), 260);
-    }, 2200);
+      window.setTimeout(() => overlay.remove(), 220);
+    };
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) close();
+    });
+    const closeBtn = overlay.querySelector(".enquiry-success-close");
+    if (closeBtn) closeBtn.addEventListener("click", close);
+    document.body.appendChild(overlay);
+    requestAnimationFrame(() => overlay.classList.add("is-visible"));
   }
 
   function renderOrdersPage() {
@@ -865,10 +870,9 @@
         }
       }
 
-      const customerName = payload.customer && payload.customer.name ? payload.customer.name : "";
       saveCart([]);
       renderCartPage();
-      showEnquirySuccessOverlay(customerName);
+      showEnquirySuccessOverlay();
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (_) {
       if (statusEl) {

@@ -987,13 +987,14 @@ body[data-page="home"] .recommended .page-head {
   place-items: center;
   background: rgba(7, 18, 38, 0.42);
   opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.24s ease;
+  pointer-events: auto;
+  transition: opacity 0.22s ease;
 }
 .enquiry-success-overlay.is-visible {
   opacity: 1;
 }
 .enquiry-success-card {
+  position: relative;
   width: min(92vw, 460px);
   border-radius: 16px;
   border: 1px solid rgba(255,255,255,0.44);
@@ -1013,6 +1014,17 @@ body[data-page="home"] .recommended .page-head {
   margin: 0;
   color: #41536d;
   font-size: 0.95rem;
+}
+.enquiry-success-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  padding: 0.22rem 0.6rem;
+  cursor: pointer;
 }
 .enquiry-success-check {
   width: 64px;
