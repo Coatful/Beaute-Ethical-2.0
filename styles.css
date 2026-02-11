@@ -548,6 +548,25 @@ body[data-page="home"] .recommended .page-head {
   object-position: center center;
   transform: translateY(-27%);
   filter: drop-shadow(0 16px 18px rgba(15, 25, 40, 0.25));
+  opacity: 0.96;
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.2) 0%,
+    rgba(0, 0, 0, 0.36) 24%,
+    rgba(0, 0, 0, 0.56) 48%,
+    rgba(0, 0, 0, 0.76) 68%,
+    rgba(0, 0, 0, 0.9) 84%,
+    rgba(0, 0, 0, 1) 100%
+  );
+  mask-image: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.2) 0%,
+    rgba(0, 0, 0, 0.36) 24%,
+    rgba(0, 0, 0, 0.56) 48%,
+    rgba(0, 0, 0, 0.76) 68%,
+    rgba(0, 0, 0, 0.9) 84%,
+    rgba(0, 0, 0, 1) 100%
+  );
 }
 
 .bottle-3d {
@@ -1229,6 +1248,13 @@ body[data-page="home"] .recommended .page-head {
   }
 }
 
+@media (max-width: 990px) and (min-width: 761px) {
+  .hero-product {
+    max-width: clamp(430px, 61vw, 640px);
+    max-height: min(76vh, 640px);
+  }
+}
+
 @media (max-width: 760px) {
   .header-wrap { gap: 0.45rem; min-height: 84px; padding: 0 0.5rem; }
   .site-logo { height: clamp(66px, 19.5vw, 94px); max-width: 62vw; }
@@ -1299,31 +1325,24 @@ body[data-page="home"] .recommended .page-head {
   .hero-visual {
     display: block;
     position: absolute;
-    inset: 0;
+    inset: 0 auto auto 0;
     width: 100%;
+    height: calc(100svh - 84px);
     z-index: 0;
     pointer-events: none;
+    overflow: hidden;
   }
   .hero-visual::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      90deg,
-      rgba(233, 241, 252, 0.92) 0%,
-      rgba(233, 241, 252, 0.92) 50%,
-      rgba(233, 241, 252, 0) 50%,
-      rgba(233, 241, 252, 0) 100%
-    );
-    z-index: 2;
+    display: none;
   }
   .hero-visual .hero-product {
     position: absolute;
-    left: 50%;
-    top: 54%;
-    transform: translate(-50%, -200%);
-    width: 122%;
-    max-width: 122%;
+    left: auto;
+    right: -20%;
+    top: 46%;
+    transform: translateY(-50%);
+    width: 132%;
+    max-width: 132%;
     max-height: none;
     height: 96%;
     aspect-ratio: auto;
@@ -1332,26 +1351,8 @@ body[data-page="home"] .recommended .page-head {
   .hero-visual .hero-product img {
     width: 100%;
     height: 100%;
-    opacity: 1;
+    opacity: 0.96;
     transform: none;
-    -webkit-mask-image: linear-gradient(
-      90deg,
-      rgba(0, 0, 0, 0.18) 0%,
-      rgba(0, 0, 0, 0.28) 22%,
-      rgba(0, 0, 0, 0.52) 42%,
-      rgba(0, 0, 0, 0.78) 62%,
-      rgba(0, 0, 0, 0.96) 82%,
-      rgba(0, 0, 0, 1) 100%
-    );
-    mask-image: linear-gradient(
-      90deg,
-      rgba(0, 0, 0, 0.18) 0%,
-      rgba(0, 0, 0, 0.28) 22%,
-      rgba(0, 0, 0, 0.52) 42%,
-      rgba(0, 0, 0, 0.78) 62%,
-      rgba(0, 0, 0, 0.96) 82%,
-      rgba(0, 0, 0, 1) 100%
-    );
   }
   .hero {
     position: relative;
