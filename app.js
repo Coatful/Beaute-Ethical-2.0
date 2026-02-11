@@ -2,6 +2,10 @@
   const catalogData = window.BEAUTE_CATALOG || { brands: [], products: [] };
   const products = catalogData.products || [];
   const CART_KEY = "beaute_cart_v1";
+  const ORDER_LOG_KEY = "beaute_order_log_v1";
+  const ORDER_WEBHOOK_URL = window.BEAUTE_ORDER_WEBHOOK_URL || "";
+  const ORDER_VIEW_PASSCODE = window.BEAUTE_ORDER_VIEW_PASSCODE || "beaute-admin";
+  const ORDER_VIEW_SESSION_KEY = "beaute_order_view_ok";
   const RECOMMENDED_CACHE_KEY = "beaute_recommended_cache_v1";
   const RECOMMENDED_WINDOW_MS = 5000;
 
@@ -63,6 +67,49 @@
   function saveCart(cart) {
     localStorage.setItem(CART_KEY, JSON.stringify(cart));
     updateCartCount();
+  }
+
+  function saveOrderLog(entry) {
+    let log = [];
+    try {
+      log = JSON.parse(localStorage.getItem(ORDER_LOG_KEY) || "[]");
+      if (!Array.isArray(log)) log = [];
+    } catch {
+      log = [];
+    }
+    log.unshift(entry);
+    if (log.length > 200) log = log.slice(0, 200);
+    localStorage.setItem(ORDER_LOG_KEY, JSON.stringify(log));
+  }
+
+  function getOrderLog() {
+    try {
+      const log = JSON.parse(localStorage.getItem(ORDER_LOG_KEY) || "[]");
+      return Array.isArray(log) ? log : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function toCsv(rows) {
+    const escCell = (v) => {
+      const s = String(v == null ? "" : v);
+      if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+      return s;
+    };
+    return rows.map((r) => r.map(escCell).join(",")).join("\n");
+  }
+
+  function downloadText(filename, text, mime = "text/plain;charset=utf-8") {
+    const blob = new Blob([text], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   }
 
   function countCart() {
@@ -614,7 +661,7 @@
       return;
     }
 
-    root.innerHTML = cart.map((item) => {
+    const itemsHtml = cart.map((item) => {
       const p = products.find((x) => x.slug === item.slug);
       if (!p) return "";
       return `
@@ -627,6 +674,209 @@
         </div>
       `;
     }).join("");
+
+    root.innerHTML = `
+      <section class="order-enquiry order-enquiry--top" id="orderEnquiry">
+        <h3>Submit your order enquiry</h3>
+        <p class="lede">No online payment required. Submit your cart and our sales representative will contact you.</p>
+        <form id="orderEnquiryForm" class="order-form">
+          <label>
+            <span>Name</span>
+            <input name="name" type="text" required maxlength="120" autocomplete="name" />
+          </label>
+          <label>
+            <span>Phone / WhatsApp</span>
+            <input name="phone" type="text" required maxlength="40" autocomplete="tel" />
+          </label>
+          <label>
+            <span>Email</span>
+            <input name="email" type="email" required maxlength="160" autocomplete="email" />
+          </label>
+          <label>
+            <span>Company (optional)</span>
+            <input name="company" type="text" maxlength="120" autocomplete="organization" />
+          </label>
+          <label class="order-form--wide">
+            <span>Address (optional)</span>
+            <textarea name="address" rows="4" maxlength="1200"></textarea>
+          </label>
+          <button class="add-cart order-submit" type="submit">Submit Order Enquiry</button>
+          <p id="orderStatus" class="order-status" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+      <section class="cart-items-block">
+        <h3>Cart items</h3>
+        ${itemsHtml}
+      </section>
+    `;
+  }
+
+  function showEnquirySuccessOverlay(name = "") {
+    const old = document.querySelector(".enquiry-success-overlay");
+    if (old) old.remove();
+
+    const overlay = document.createElement("div");
+    overlay.className = "enquiry-success-overlay";
+    overlay.innerHTML = `
+      <div class="enquiry-success-card" role="status" aria-live="polite">
+        <div class="enquiry-success-check" aria-hidden="true">
+          <svg viewBox="0 0 64 64"><path d="M16 34l11 11 21-24"/></svg>
+        </div>
+        <h3>Enquiry Submitted</h3>
+        <p>${name ? `Thank you, ${esc(name)}.` : "Thank you."} Our sales representative will contact you soon.</p>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    requestAnimationFrame(() => overlay.classList.add("is-visible"));
+    window.setTimeout(() => {
+      overlay.classList.remove("is-visible");
+      window.setTimeout(() => overlay.remove(), 260);
+    }, 2200);
+  }
+
+  function renderOrdersPage() {
+    const root = document.getElementById("ordersPage");
+    if (!root) return;
+
+    const alreadyOk = sessionStorage.getItem(ORDER_VIEW_SESSION_KEY) === "1";
+    if (!alreadyOk) {
+      const entered = window.prompt("Enter admin passcode");
+      if (entered !== ORDER_VIEW_PASSCODE) {
+        root.innerHTML = `<p>Access denied.</p>`;
+        return;
+      }
+      sessionStorage.setItem(ORDER_VIEW_SESSION_KEY, "1");
+    }
+
+    const log = getOrderLog();
+    if (!log.length) {
+      root.innerHTML = `
+        <div class="orders-toolbar">
+          <button class="qty-btn" type="button" data-orders-action="refresh">Refresh</button>
+          <button class="qty-btn" type="button" data-orders-action="export">Export CSV</button>
+        </div>
+        <p>No enquiries yet.</p>
+      `;
+      return;
+    }
+
+    const rows = log.map((entry, idx) => {
+      const itemText = (entry.items || [])
+        .map((it) => `${it.title} x${it.qty} (${it.brand} / ${it.line})`)
+        .join("<br/>");
+      const customer = entry.customer || {};
+      return `
+        <tr>
+          <td>${idx + 1}</td>
+          <td>${esc(entry.submittedAt || "")}</td>
+          <td>${esc(customer.name || "")}</td>
+          <td>${esc(customer.phone || "")}</td>
+          <td>${esc(customer.email || "")}</td>
+          <td>${esc(customer.company || "")}</td>
+          <td class="orders-items">${itemText || "-"}</td>
+          <td>${esc(customer.address || "")}</td>
+        </tr>
+      `;
+    }).join("");
+
+    root.innerHTML = `
+      <div class="orders-toolbar">
+        <button class="qty-btn" type="button" data-orders-action="refresh">Refresh</button>
+        <button class="qty-btn" type="button" data-orders-action="export">Export CSV</button>
+        <button class="remove-btn" type="button" data-orders-action="clear">Clear Local Log</button>
+      </div>
+      <div class="orders-table-wrap">
+        <table class="orders-table">
+          <thead>
+            <tr>
+              <th>#</th><th>Submitted</th><th>Name</th><th>Phone</th><th>Email</th><th>Company</th><th>Items</th><th>Address</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  function buildOrderPayload(form) {
+    const data = new FormData(form);
+    const cart = getCart();
+    const items = cart
+      .map((item) => {
+        const p = products.find((x) => x.slug === item.slug);
+        if (!p) return null;
+        return {
+          slug: p.slug,
+          title: p.title,
+          brand: p.brand,
+          line: p.line,
+          qty: item.qty
+        };
+      })
+      .filter(Boolean);
+
+    return {
+      submittedAt: new Date().toISOString(),
+      source: window.location.href,
+      customer: {
+        name: String(data.get("name") || "").trim(),
+        phone: String(data.get("phone") || "").trim(),
+        email: String(data.get("email") || "").trim(),
+        company: String(data.get("company") || "").trim(),
+        address: String(data.get("address") || "").trim()
+      },
+      items
+    };
+  }
+
+  async function submitOrderEnquiry(form) {
+    const statusEl = document.getElementById("orderStatus");
+    const payload = buildOrderPayload(form);
+    if (!payload.items.length) {
+      if (statusEl) statusEl.textContent = "Your cart is empty.";
+      return;
+    }
+    if (!payload.customer.name || !payload.customer.phone || !payload.customer.email) {
+      if (statusEl) statusEl.textContent = "Please complete name, phone, and email.";
+      return;
+    }
+
+    if (statusEl) statusEl.textContent = "Submitting enquiry...";
+    form.classList.add("is-submitting");
+
+    try {
+      saveOrderLog(payload);
+      if (ORDER_WEBHOOK_URL) {
+        try {
+          const resp = await fetch(ORDER_WEBHOOK_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          if (!resp.ok) throw new Error(`Webhook failed: ${resp.status}`);
+        } catch (_) {
+          await fetch(ORDER_WEBHOOK_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify(payload)
+          });
+        }
+      }
+
+      const customerName = payload.customer && payload.customer.name ? payload.customer.name : "";
+      saveCart([]);
+      renderCartPage();
+      showEnquirySuccessOverlay(customerName);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (_) {
+      if (statusEl) {
+        statusEl.textContent = "Could not submit to webhook. Enquiry saved locally in this browser.";
+      }
+    } finally {
+      form.classList.remove("is-submitting");
+    }
   }
 
   function wireCartEvents() {
@@ -658,6 +908,54 @@
         if (rem || cart[idx].qty <= 0) cart.splice(idx, 1);
         saveCart(cart);
         if (document.body.dataset.page === "cart") renderCartPage();
+      }
+    });
+
+    document.addEventListener("submit", (e) => {
+      const target = e.target;
+      if (!(target instanceof HTMLFormElement)) return;
+      if (target.id !== "orderEnquiryForm") return;
+      e.preventDefault();
+      submitOrderEnquiry(target);
+    });
+
+    document.addEventListener("click", (e) => {
+      const target = e.target;
+      if (!(target instanceof HTMLElement)) return;
+      const btn = target.closest("[data-orders-action]");
+      if (!btn) return;
+      const action = btn.getAttribute("data-orders-action");
+      if (!action) return;
+      if (action === "refresh") {
+        renderOrdersPage();
+        return;
+      }
+      if (action === "clear") {
+        if (!window.confirm("Clear locally saved enquiries from this browser?")) return;
+        localStorage.removeItem(ORDER_LOG_KEY);
+        renderOrdersPage();
+        return;
+      }
+      if (action === "export") {
+        const log = getOrderLog();
+        const rows = [["submittedAt", "name", "phone", "email", "company", "items", "address", "source"]];
+        log.forEach((entry) => {
+          const c = entry.customer || {};
+          const items = (entry.items || [])
+            .map((it) => `${it.title} x${it.qty} (${it.brand}/${it.line})`)
+            .join(" | ");
+          rows.push([
+            entry.submittedAt || "",
+            c.name || "",
+            c.phone || "",
+            c.email || "",
+            c.company || "",
+            items,
+            c.address || "",
+            entry.source || ""
+          ]);
+        });
+        downloadText(`beaute-orders-${Date.now()}.csv`, toCsv(rows), "text/csv;charset=utf-8");
       }
     });
   }
@@ -951,6 +1249,7 @@
     if (!setupLegacyHeroRipples()) setupHeroInkFallback();
   }
   if (page === "cart") renderCartPage();
+  if (page === "orders") renderOrdersPage();
 
   updateCartCount();
   wireCartEvents();
