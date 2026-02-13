@@ -855,11 +855,11 @@
       }
 
       .hero-word-primary {
-        font-size: clamp(2.3rem, 10.2vw, 4.1rem);
+        font-size: clamp(2.8rem, 11.8vw, 4.9rem);
       }
 
       .hero-word-accent {
-        font-size: clamp(3.2rem, 13vw, 5.2rem);
+        font-size: clamp(3.8rem, 15.8vw, 6.3rem);
       }
 
       .hero-pos-tl {
@@ -883,8 +883,8 @@
       }
 
       .hero-model {
-        top: 50%;
-        height: 108%;
+        top: 53%;
+        height: 84%;
       }
 
       .featured {
@@ -929,19 +929,22 @@
 
     @media (max-width: 500px) {
       .hero-model {
-        height: 81%;
+        top: 54%;
+        height: 68%;
       }
     }
 
     @media (min-width: 501px) and (max-width: 583px) {
       .hero-model {
-        height: 92%;
+        top: 54%;
+        height: 76%;
       }
     }
 
     @media (min-width: 585px) and (max-width: 768px) {
       .hero-model {
-        height: 92%;
+        top: 53%;
+        height: 80%;
       }
     }
 
@@ -965,12 +968,17 @@
         min-height: 470px;
       }
 
+      .hero-model {
+        top: 55%;
+        height: 62%;
+      }
+
       .hero-word-primary {
-        font-size: clamp(2rem, 9vw, 3rem);
+        font-size: clamp(3.2rem, 14vw, 5rem);
       }
 
       .hero-word-accent {
-        font-size: clamp(2.7rem, 11vw, 4.2rem);
+        font-size: clamp(4.3rem, 18vw, 6.8rem);
       }
 
       .hero-pos-tl {
@@ -993,6 +1001,97 @@
       .add-cart {
         font-size: 0.78rem;
         padding: 0.5rem 0.5rem;
+      }
+    }
+
+    @media (max-width: 440px) {
+      .hero-model {
+        top: 56% !important;
+        height: 54% !important;
+      }
+
+      .hero-model img {
+        height: 100% !important;
+        width: auto !important;
+      }
+
+      .hero-word-primary {
+        font-size: clamp(3.5rem, 15.2vw, 5.4rem) !important;
+      }
+
+      .hero-word-accent {
+        font-size: clamp(4.7rem, 19.5vw, 7.2rem) !important;
+      }
+    }
+
+    @media (max-width: 440px) and (max-height: 470px) {
+      .hero-model {
+        top: 56% !important;
+        height: 54% !important;
+      }
+
+      .hero-word-primary {
+        font-size: clamp(3.5rem, 15.2vw, 5.4rem) !important;
+      }
+
+      .hero-word-accent {
+        font-size: clamp(4.7rem, 19.5vw, 7.2rem) !important;
+      }
+
+      .tilted-card-img.modeling-mask {
+        transform: translateZ(0) scale(0.756) !important;
+      }
+
+      .tilted-card-name {
+        font-size: 1.02rem !important;
+      }
+
+      .tilted-card-badge {
+        font-size: 0.74rem !important;
+      }
+
+      .add-cart {
+        font-size: 0.94rem !important;
+      }
+    }
+
+    /* Final mobile hero sizing override */
+    @media (max-width: 768px) {
+      .hero-model {
+        top: 57% !important;
+        height: 58% !important;
+      }
+
+      .hero-model img {
+        transform: scale(0.82) !important;
+        transform-origin: center bottom !important;
+      }
+
+      .hero-word-primary {
+        font-size: clamp(3.4rem, 14.5vw, 5.8rem) !important;
+      }
+
+      .hero-word-accent {
+        font-size: clamp(4.5rem, 18.8vw, 7.6rem) !important;
+      }
+    }
+
+    @media (max-width: 440px) {
+      .hero-model {
+        top: 59% !important;
+        height: 50% !important;
+      }
+
+      .hero-model img {
+        transform: scale(0.76) !important;
+      }
+
+      .hero-word-primary {
+        font-size: clamp(3.8rem, 16vw, 6.2rem) !important;
+      }
+
+      .hero-word-accent {
+        font-size: clamp(5rem, 21vw, 8rem) !important;
       }
     }
   </style>
