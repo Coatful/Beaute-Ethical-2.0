@@ -1242,6 +1242,58 @@
     });
   }
 
+  function setupLogoSpin() {
+    const logos = document.querySelectorAll(".site-logo");
+    if (!logos.length) return;
+
+    logos.forEach((logo) => {
+      if (!(logo instanceof HTMLElement)) return;
+      if (logo.dataset.spinBound === "1") return;
+      logo.dataset.spinBound = "1";
+
+      logo.style.transformOrigin = "50% 50%";
+      logo.style.willChange = "transform";
+      let pulseTween = null;
+
+      logo.addEventListener("mouseenter", () => {
+        if (window.gsap) {
+          if (pulseTween) pulseTween.kill();
+          gsap.killTweensOf(logo);
+          pulseTween = gsap.to(logo, {
+            scale: 1.045,
+            duration: 1.2,
+            ease: "sine.inOut",
+            yoyo: true,
+            repeat: -1
+          });
+          return;
+        }
+
+        logo.style.transition = "transform 0.8s ease-in-out";
+        logo.style.transform = "scale(1.03)";
+      });
+
+      logo.addEventListener("mouseleave", () => {
+        if (window.gsap) {
+          if (pulseTween) {
+            pulseTween.kill();
+            pulseTween = null;
+          }
+          gsap.to(logo, {
+            scale: 1,
+            duration: 0.45,
+            ease: "power2.out",
+            overwrite: "auto"
+          });
+          return;
+        }
+
+        logo.style.transition = "transform 0.45s ease-out";
+        logo.style.transform = "scale(1)";
+      });
+    });
+  }
+
   const page = document.body.dataset.page;
   if (page === "products") renderProductsPage();
   if (page === "brand") renderBrandPage(document.body.dataset.brand || "");
@@ -1261,6 +1313,7 @@
   enhanceInteractiveButtons();
   observeButtonInjection();
   setupMobileMenu();
+  setupLogoSpin();
   wireQuickSmoothAnchors();
   if (page !== "home") setupRipple();
   animate();
