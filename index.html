@@ -2217,7 +2217,7 @@
         }
 
         /* Hero word flight on scroll (smooth, exits viewport) */
-        if (window.ScrollTrigger && !liteMotion) {
+        if (window.ScrollTrigger) {
           var heroSection = document.querySelector(".hero");
           var wordTL = document.querySelector(".hero-pos-tl"); // Nothing
           var wordTR = document.querySelector(".hero-pos-tr"); // Ordinary
@@ -2225,6 +2225,15 @@
           var wordBR = document.querySelector(".hero-pos-br"); // Skin
 
           if (heroSection && wordTL && wordTR && wordBL && wordBR) {
+            var travelX = liteMotion ? 0.34 : 1.15;
+            var travelY = liteMotion ? 0.28 : 0.95;
+            var brTravelX = liteMotion ? 0.22 : 0.5;
+            var brTravelY = liteMotion ? 0.24 : 0.78;
+            var rotAmt = liteMotion ? 8 : 18;
+            var endScaleA = liteMotion ? 0.92 : 0.78;
+            var endScaleB = liteMotion ? 0.94 : 0.8;
+            var endOpacity = liteMotion ? 0.2 : 0;
+            var fadeDuration = liteMotion ? 0.28 : 0.12;
             var wordFlightTl = gsap.timeline({
               defaults: { ease: "none" }
             });
@@ -2233,55 +2242,55 @@
                TL: -x -y, TR: +x -y, BL: -x +y, BR: +x +y
                Also fade/scale out so words exit smoothly without hard edge clipping. */
             wordFlightTl.to(wordTL, {
-              x: function () { return -window.innerWidth * 1.15; },
-              y: function () { return -window.innerHeight * 0.95; },
-              rotation: -18,
-              scale: 0.78
+              x: function () { return -window.innerWidth * travelX; },
+              y: function () { return -window.innerHeight * travelY; },
+              rotation: -rotAmt,
+              scale: endScaleA
             }, 0);
 
             wordFlightTl.to(wordTR, {
-              x: function () { return window.innerWidth * 1.15; },
-              y: function () { return -window.innerHeight * 0.95; },
-              rotation: 18,
-              scale: 0.78
+              x: function () { return window.innerWidth * travelX; },
+              y: function () { return -window.innerHeight * travelY; },
+              rotation: rotAmt,
+              scale: endScaleA
             }, 0);
 
             wordFlightTl.to(wordBL, {
-              x: function () { return -window.innerWidth * 1.15; },
-              y: function () { return window.innerHeight * 0.95; },
-              rotation: -18,
-              scale: 0.78
+              x: function () { return -window.innerWidth * travelX; },
+              y: function () { return window.innerHeight * travelY; },
+              rotation: -rotAmt,
+              scale: endScaleA
             }, 0);
 
             wordFlightTl.to(wordBR, {
-              x: function () { return window.innerWidth * 0.5; },
-              y: function () { return window.innerHeight * 0.78; },
-              rotation: 10,
-              scale: 0.8
+              x: function () { return window.innerWidth * brTravelX; },
+              y: function () { return window.innerHeight * brTravelY; },
+              rotation: liteMotion ? 6 : 10,
+              scale: endScaleB
             }, 0);
 
             /* Fade all words out early so none look clipped at edges. */
             wordFlightTl.to(wordTL, {
-              opacity: 0,
-              duration: 0.12,
+              opacity: endOpacity,
+              duration: fadeDuration,
               ease: "power1.out"
             }, 0);
 
             wordFlightTl.to(wordTR, {
-              opacity: 0,
-              duration: 0.12,
+              opacity: endOpacity,
+              duration: fadeDuration,
               ease: "power1.out"
             }, 0);
 
             wordFlightTl.to(wordBL, {
-              opacity: 0,
-              duration: 0.12,
+              opacity: endOpacity,
+              duration: fadeDuration,
               ease: "power1.out"
             }, 0);
 
             wordFlightTl.to(wordBR, {
-              opacity: 0,
-              duration: 0.12,
+              opacity: endOpacity,
+              duration: fadeDuration,
               ease: "power1.out"
             }, 0);
 
@@ -2289,7 +2298,7 @@
               trigger: heroSection,
               start: "top top",
               end: "bottom top",
-              scrub: true,
+              scrub: liteMotion ? 0.6 : true,
               invalidateOnRefresh: true,
               animation: wordFlightTl
             });
@@ -2300,17 +2309,17 @@
 
         /* Model flight on scroll — flies up while scrolling down,
            and returns as the user scrolls back up. */
-        if (heroModelImg && window.ScrollTrigger && !liteMotion) {
+        if (heroModelImg && window.ScrollTrigger) {
           gsap.fromTo(heroModelImg,
             { yPercent: 0 },
             {
-              yPercent: -85,
+              yPercent: liteMotion ? -28 : -85,
               ease: "none",
               scrollTrigger: {
                 trigger: ".hero",
                 start: "top top",
                 end: "bottom top",
-                scrub: 1.2,
+                scrub: liteMotion ? 0.7 : 1.2,
                 invalidateOnRefresh: true
               }
             }
