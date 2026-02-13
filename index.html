@@ -1157,6 +1157,15 @@
         font-size: clamp(2.3423rem, 10.2475vw, 3.6808rem) !important;
       }
     }
+
+    /* Desktop/tablet: anchor model to bottom to remove the gap */
+    @media (min-width: 501px) {
+      .hero-model {
+        top: auto !important;
+        bottom: -1.5vh !important;
+        transform: translateX(-50%) !important;
+      }
+    }
   </style>
 </head>
 
