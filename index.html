@@ -1166,6 +1166,19 @@
         transform: translateX(-50%) !important;
       }
     }
+
+    /* Mobile only: keep model anchored to bottom and close base gap */
+    @media (max-width: 500px) {
+      .hero-model {
+        top: auto !important;
+        bottom: -1.2vh !important;
+        transform: translateX(-50%) !important;
+      }
+
+      .hero-model img {
+        margin-bottom: -1.2vh;
+      }
+    }
   </style>
 </head>
 
@@ -2309,17 +2322,23 @@
 
         /* Model flight on scroll — flies up while scrolling down,
            and returns as the user scrolls back up. */
-        if (heroModelImg && window.ScrollTrigger) {
-          gsap.fromTo(heroModelImg,
+        var compactModelMotion = window.matchMedia("(max-width: 500px)").matches;
+        var modelMotionTarget = (compactModelMotion && heroModel) ? heroModel : heroModelImg;
+        if (modelMotionTarget && window.ScrollTrigger) {
+          var modelLift = compactModelMotion
+            ? (liteMotion ? -16 : -22)
+            : (liteMotion ? -28 : -85);
+          var modelScrub = compactModelMotion ? 0.55 : (liteMotion ? 0.7 : 1.2);
+          gsap.fromTo(modelMotionTarget,
             { yPercent: 0 },
             {
-              yPercent: liteMotion ? -28 : -85,
+              yPercent: modelLift,
               ease: "none",
               scrollTrigger: {
                 trigger: ".hero",
                 start: "top top",
                 end: "bottom top",
-                scrub: liteMotion ? 0.7 : 1.2,
+                scrub: modelScrub,
                 invalidateOnRefresh: true
               }
             }
