@@ -1125,6 +1125,13 @@
     }
 
     @media (max-width: 440px) {
+      .hero-word,
+      .hero-model,
+      .hero-model img {
+        will-change: transform, opacity;
+        backface-visibility: hidden;
+      }
+
       .hero-model {
         top: 60% !important;
         height: 72.875% !important;
@@ -1298,6 +1305,28 @@
       var CART_KEY = "beaute_cart_v1";
       var featuredReshuffleTimer = null;
       var featuredScrollTrigger = null;
+
+      function isCompactMobile() {
+        return window.matchMedia("(max-width: 440px)").matches;
+      }
+
+      function isCoarsePointer() {
+        return window.matchMedia("(hover: none), (pointer: coarse)").matches;
+      }
+
+      function userPrefersReducedMotion() {
+        return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      }
+
+      function shouldUseLiteMotion() {
+        var lowCpu = typeof navigator.hardwareConcurrency === "number" &&
+          navigator.hardwareConcurrency > 0 &&
+          navigator.hardwareConcurrency <= 4;
+        var lowMem = typeof navigator.deviceMemory === "number" &&
+          navigator.deviceMemory > 0 &&
+          navigator.deviceMemory <= 4;
+        return userPrefersReducedMotion() || isCompactMobile() || (isCoarsePointer() && (lowCpu || lowMem));
+      }
 
       function getCatalogProducts() {
         var catalog = window.BEAUTE_CATALOG || { products: [] };
@@ -1682,47 +1711,78 @@
          Falls back to CSS ink drops if plugin unavailable.
          ═══════════════════════════════════════════ */
       function initHeroRipples() {
+        var compact = isCompactMobile();
+        var liteMode = shouldUseLiteMotion();
+        if (liteMode) {
+          initHeroInkFallback({ compact: compact, lite: true });
+          return;
+        }
+
         var jq = window.jQuery || window.$;
         if (!jq || !jq.fn || !jq.fn.ripples) {
-          initHeroInkFallback();
+          initHeroInkFallback({ compact: compact, lite: true });
           return;
         }
 
         var $hero = jq("#hero");
         if (!$hero.length) return;
 
+        var heroWidth = window.innerWidth || document.documentElement.clientWidth || 1440;
+        var qualityMobile = heroWidth <= 768;
+        var rippleResolution = qualityMobile ? 256 : 512;
+        var rippleRadius = qualityMobile ? 20 : 28;
+        var ripplePerturbance = qualityMobile ? 0.12 : 0.16;
+
         try {
           try { $hero.ripples("destroy"); } catch (_) { }
           $hero.ripples({
-            resolution: 512,
-            dropRadius: 28,
-            perturbance: 0.16
+            resolution: rippleResolution,
+            dropRadius: rippleRadius,
+            perturbance: ripplePerturbance
           });
         } catch (_) {
-          initHeroInkFallback();
+          initHeroInkFallback({ compact: compact, lite: true });
           return;
         }
 
         var heroEl = $hero.get(0);
         var lastDrop = 0;
+        var lastTouchTs = 0;
 
-        heroEl.addEventListener("mousemove", function (e) {
-          var now = performance.now();
-          if (now - lastDrop < 55) return;
-          lastDrop = now;
-          var rect = heroEl.getBoundingClientRect();
-          $hero.ripples("drop", e.clientX - rect.left, e.clientY - rect.top, 14, 0.09);
-        }, { passive: true });
+        if (!isCoarsePointer()) {
+          heroEl.addEventListener("mousemove", function (e) {
+            var now = performance.now();
+            if (now - lastDrop < 85) return;
+            lastDrop = now;
+            var rect = heroEl.getBoundingClientRect();
+            $hero.ripples("drop", e.clientX - rect.left, e.clientY - rect.top, 14, 0.08);
+          }, { passive: true });
+        }
 
         heroEl.addEventListener("click", function (e) {
+          if (performance.now() - lastTouchTs < 450) return;
           var rect = heroEl.getBoundingClientRect();
-          $hero.ripples("drop", e.clientX - rect.left, e.clientY - rect.top, 30, 0.18);
-        });
+          $hero.ripples("drop", e.clientX - rect.left, e.clientY - rect.top, 26, 0.15);
+        }, { passive: true });
+
+        heroEl.addEventListener("touchstart", function (e) {
+          if (!e.touches || !e.touches.length) return;
+          lastTouchTs = performance.now();
+          var touch = e.touches[0];
+          var rect = heroEl.getBoundingClientRect();
+          $hero.ripples("drop", touch.clientX - rect.left, touch.clientY - rect.top, 24, 0.14);
+        }, { passive: true });
       }
 
-      function initHeroInkFallback() {
+      function initHeroInkFallback(options) {
+        options = options || {};
+        var compact = !!options.compact || isCompactMobile();
+        var lite = !!options.lite || shouldUseLiteMotion();
         var hero = document.getElementById("hero");
         if (!hero) return;
+
+        var existingLayer = hero.querySelector(".hero-ink-layer");
+        if (existingLayer) existingLayer.remove();
 
         var layer = document.createElement("div");
         layer.className = "hero-ink-layer";
@@ -1737,19 +1797,32 @@
           setTimeout(function () { drop.remove(); }, large ? 1400 : 950);
         }
 
+        var moveThrottle = compact ? 160 : 95;
         var lastMove = 0;
-        hero.addEventListener("mousemove", function (e) {
-          var now = performance.now();
-          if (now - lastMove < 85) return;
-          lastMove = now;
-          var rect = hero.getBoundingClientRect();
-          spawn(e.clientX - rect.left, e.clientY - rect.top, false);
-        }, { passive: true });
+        var lastTouchTs = 0;
+        if (!lite && !isCoarsePointer()) {
+          hero.addEventListener("mousemove", function (e) {
+            var now = performance.now();
+            if (now - lastMove < moveThrottle) return;
+            lastMove = now;
+            var rect = hero.getBoundingClientRect();
+            spawn(e.clientX - rect.left, e.clientY - rect.top, false);
+          }, { passive: true });
+        }
 
         hero.addEventListener("click", function (e) {
+          if (performance.now() - lastTouchTs < 450) return;
           var rect = hero.getBoundingClientRect();
           spawn(e.clientX - rect.left, e.clientY - rect.top, true);
-        });
+        }, { passive: true });
+
+        hero.addEventListener("touchstart", function (e) {
+          if (!e.touches || !e.touches.length) return;
+          lastTouchTs = performance.now();
+          var touch = e.touches[0];
+          var rect = hero.getBoundingClientRect();
+          spawn(touch.clientX - rect.left, touch.clientY - rect.top, true);
+        }, { passive: true });
       }
 
       /* ═══════════════════════════════════════════
@@ -1760,6 +1833,17 @@
          ═══════════════════════════════════════════ */
       function setupTiltedCards() {
         var cards = document.querySelectorAll(".tilted-card-figure");
+        if (!cards.length) return;
+
+        if (shouldUseLiteMotion() || isCoarsePointer()) {
+          cards.forEach(function (figure) {
+            var inner = figure.querySelector(".tilted-card-inner");
+            var caption = figure.querySelector(".tilted-card-caption");
+            if (inner && window.gsap) gsap.set(inner, { rotateX: 0, rotateY: 0, scale: 1 });
+            if (caption && window.gsap) gsap.set(caption, { opacity: 0, rotate: 0 });
+          });
+          return;
+        }
 
         cards.forEach(function (figure) {
           var inner = figure.querySelector(".tilted-card-inner");
@@ -1926,6 +2010,7 @@
         if (!window.gsap) return;
         var featuredCards = gsap.utils.toArray("#featuredGrid .tilted-card-figure");
         if (!featuredCards.length) return;
+        var liteMotion = shouldUseLiteMotion();
 
         gsap.set(featuredCards, { x: 0, y: 0, scale: 1, opacity: 1 });
         if (!window.ScrollTrigger) return;
@@ -1933,6 +2018,26 @@
         if (featuredScrollTrigger) {
           featuredScrollTrigger.kill();
           featuredScrollTrigger = null;
+        }
+
+        if (liteMotion) {
+          gsap.set(featuredCards, { y: 16, opacity: 0, scale: 1 });
+          featuredScrollTrigger = ScrollTrigger.create({
+            trigger: "#featured",
+            start: "top 92%",
+            once: true,
+            onEnter: function () {
+              gsap.to(featuredCards, {
+                y: 0,
+                opacity: 1,
+                duration: 0.42,
+                ease: "power2.out",
+                stagger: 0.06,
+                overwrite: "auto"
+              });
+            }
+          });
+          return;
         }
 
         var tl = gsap.timeline({
@@ -1984,6 +2089,7 @@
 
       function scheduleFeaturedReshuffle() {
         if (featuredReshuffleTimer) clearTimeout(featuredReshuffleTimer);
+        if (shouldUseLiteMotion()) return;
         featuredReshuffleTimer = setTimeout(function () {
           renderFeatured();
           animateFeaturedFrameIn();
@@ -1997,9 +2103,20 @@
       function initAnimations() {
         if (!window.gsap) return;
         if (window.ScrollTrigger) gsap.registerPlugin(ScrollTrigger);
+        var liteMotion = shouldUseLiteMotion();
 
         /* Reveal elements on scroll */
         gsap.utils.toArray(".reveal").forEach(function (el) {
+          if (liteMotion || !window.ScrollTrigger) {
+            gsap.to(el, {
+              opacity: 1,
+              y: 0,
+              duration: 0.45,
+              ease: "power2.out",
+              overwrite: "auto"
+            });
+            return;
+          }
           gsap.to(el, {
             opacity: 1,
             y: 0,
@@ -2025,6 +2142,16 @@
         var introModelDuration = introMobile ? 0.78 : 0.95;
         var introModelY = introMobile ? 72 : 110;
         var introModelScale = introMobile ? 0.95 : 0.92;
+
+        if (liteMotion) {
+          introX = 72;
+          introY = 56;
+          introWordDuration = 0.26;
+          introWordLead = 0.03;
+          introModelDuration = 0.48;
+          introModelY = 40;
+          introModelScale = 0.98;
+        }
 
         var introTl = gsap.timeline({ defaults: { overwrite: "auto" } });
 
@@ -2081,7 +2208,7 @@
         }
 
         /* Hero word flight on scroll (smooth, exits viewport) */
-        if (window.ScrollTrigger) {
+        if (window.ScrollTrigger && !liteMotion) {
           var heroSection = document.querySelector(".hero");
           var wordTL = document.querySelector(".hero-pos-tl"); // Nothing
           var wordTR = document.querySelector(".hero-pos-tr"); // Ordinary
@@ -2164,7 +2291,7 @@
 
         /* Model flight on scroll — flies up while scrolling down,
            and returns as the user scrolls back up. */
-        if (heroModelImg && window.ScrollTrigger) {
+        if (heroModelImg && window.ScrollTrigger && !liteMotion) {
           gsap.fromTo(heroModelImg,
             { yPercent: 0 },
             {
