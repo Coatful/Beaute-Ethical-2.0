@@ -1330,11 +1330,11 @@
       function shouldUseLiteMotion() {
         var lowCpu = typeof navigator.hardwareConcurrency === "number" &&
           navigator.hardwareConcurrency > 0 &&
-          navigator.hardwareConcurrency <= 4;
+          navigator.hardwareConcurrency <= 2;
         var lowMem = typeof navigator.deviceMemory === "number" &&
           navigator.deviceMemory > 0 &&
-          navigator.deviceMemory <= 4;
-        return userPrefersReducedMotion() || isCompactMobile() || (isCoarsePointer() && (lowCpu || lowMem));
+          navigator.deviceMemory <= 2;
+        return userPrefersReducedMotion() || (isCoarsePointer() && (lowCpu || lowMem));
       }
 
       function getCatalogProducts() {
