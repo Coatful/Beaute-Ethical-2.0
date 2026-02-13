@@ -1162,7 +1162,7 @@
     @media (min-width: 501px) {
       .hero-model {
         top: auto !important;
-        bottom: -1.5vh !important;
+        bottom: -1.5vh;
         transform: translateX(-50%) !important;
       }
     }
@@ -1171,7 +1171,7 @@
     @media (max-width: 500px) {
       .hero-model {
         top: auto !important;
-        bottom: -1.2vh !important;
+        bottom: -1.2vh;
         transform: translateX(-50%) !important;
       }
 
@@ -2323,26 +2323,51 @@
         /* Model flight on scroll — flies up while scrolling down,
            and returns as the user scrolls back up. */
         var compactModelMotion = window.matchMedia("(max-width: 500px)").matches;
-        var modelMotionTarget = (compactModelMotion && heroModel) ? heroModel : heroModelImg;
-        if (modelMotionTarget && window.ScrollTrigger) {
-          var modelLift = compactModelMotion
-            ? (liteMotion ? -16 : -22)
-            : (liteMotion ? -28 : -85);
-          var modelScrub = compactModelMotion ? 0.55 : (liteMotion ? 0.7 : 1.2);
-          gsap.fromTo(modelMotionTarget,
-            { yPercent: 0 },
-            {
-              yPercent: modelLift,
-              ease: "none",
-              scrollTrigger: {
-                trigger: ".hero",
-                start: "top top",
-                end: "bottom top",
-                scrub: modelScrub,
-                invalidateOnRefresh: true
+        if (window.ScrollTrigger) {
+          if (compactModelMotion && heroModel) {
+            var modelScrubMobile = liteMotion ? 0.45 : 0.6;
+            gsap.fromTo(heroModel,
+              {
+                bottom: function () {
+                  var b = parseFloat(getComputedStyle(heroModel).bottom);
+                  return Number.isFinite(b) ? b : -window.innerHeight * 0.012;
+                }
+              },
+              {
+                bottom: function () {
+                  var b = parseFloat(getComputedStyle(heroModel).bottom);
+                  var start = Number.isFinite(b) ? b : -window.innerHeight * 0.012;
+                  var lift = window.innerHeight * (liteMotion ? 0.07 : 0.11);
+                  return start + lift;
+                },
+                ease: "none",
+                scrollTrigger: {
+                  trigger: ".hero",
+                  start: "top top",
+                  end: "bottom top",
+                  scrub: modelScrubMobile,
+                  invalidateOnRefresh: true
+                }
               }
-            }
-          );
+            );
+          } else if (heroModelImg) {
+            var modelLift = liteMotion ? -28 : -85;
+            var modelScrub = liteMotion ? 0.7 : 1.2;
+            gsap.fromTo(heroModelImg,
+              { yPercent: 0 },
+              {
+                yPercent: modelLift,
+                ease: "none",
+                scrollTrigger: {
+                  trigger: ".hero",
+                  start: "top top",
+                  end: "bottom top",
+                  scrub: modelScrub,
+                  invalidateOnRefresh: true
+                }
+              }
+            );
+          }
         }
       }
 
